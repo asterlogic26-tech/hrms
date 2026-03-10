@@ -16,6 +16,15 @@ exports.getHolidays = (req, res) => {
   });
 };
 
+exports.deleteHoliday = (req, res) => {
+  const { id } = req.params;
+  db.run('DELETE FROM holidays WHERE id = ?', [id], function (err) {
+    if (err) return res.status(500).json({ message: 'DB error', error: err.message });
+    if (this.changes === 0) return res.status(404).json({ message: 'Holiday not found' });
+    res.json({ deleted: true });
+  });
+};
+
 exports.createHoliday = (req, res) => {
   const { date, name, type } = req.body || {};
   if (!date || !name) return res.status(400).json({ message: 'date and name are required' });

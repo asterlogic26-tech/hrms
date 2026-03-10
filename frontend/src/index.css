@@ -6,10 +6,46 @@ html, body, #root {
   height: 100%;
 }
 
-.card {
-  @apply bg-white rounded-xl shadow border border-gray-100;
-}
+@layer components {
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100;
+  }
 
-.btn-primary {
-  @apply bg-brand text-white px-4 py-2 rounded-md hover:bg-brand-light transition;
+  .btn-primary {
+    @apply bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-light transition-colors font-medium text-sm shadow-sm;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-gray-700 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors font-medium text-sm;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium text-sm shadow-sm;
+  }
+
+  .input-field {
+    @apply w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-colors placeholder-gray-400;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-green  { @apply bg-green-100  text-green-700; }
+  .badge-red    { @apply bg-red-100    text-red-600; }
+  .badge-yellow { @apply bg-yellow-100 text-yellow-700; }
+  .badge-blue   { @apply bg-blue-100   text-blue-700; }
+  .badge-gray   { @apply bg-gray-100   text-gray-600; }
+
+  .table-th {
+    @apply pb-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-left;
+  }
+
+  .table-td {
+    @apply py-3 text-sm text-gray-700;
+  }
+
+  .table-row {
+    @apply border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors;
+  }
 }
