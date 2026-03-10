@@ -92,7 +92,7 @@ export default function Holidays() {
 
         <div className="card p-5">
           <div className="font-semibold text-gray-800 mb-3">Holidays ({year})</div>
-          {!isFounder && error && <div className="text-sm text-red-600 mb-2">{error}</div>}
+          {error && <div className="text-sm text-red-600 mb-3">{error}</div>}
           {rows.length === 0 ? (
             <div className="text-sm text-gray-400 text-center py-6">No holidays found for {year}.</div>
           ) : (

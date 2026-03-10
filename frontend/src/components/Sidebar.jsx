@@ -28,7 +28,9 @@ export default function Sidebar({ role, user }) {
         <Item to="/attendance" label="Attendance" icon={<CalendarCheck2 size={17} />} />
         <Item to="/leaves" label="Leaves" icon={<FileCheck2 size={17} />} />
         <Item to="/holidays" label="Holidays" icon={<CalendarDays size={17} />} />
-        <Item to="/employees" label="Employees" icon={<Users size={17} />} />
+        {(role === 'Founder' || role === 'Manager') && (
+          <Item to="/employees" label="Employees" icon={<Users size={17} />} />
+        )}
         {role === 'Founder' && (
           <Item to="/settings" label="Settings" icon={<Settings size={17} />} />
         )}
