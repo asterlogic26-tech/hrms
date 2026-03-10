@@ -98,6 +98,80 @@ exports.myAttendance = (req, res) => {
   });
 };
 
+exports.dailyReport = (req, res) => {
+  const date = today();
+  const sql = `
+    SELECT
+      u.id, u.name, u.email, u.role,
+      a.clock_in, a.clock_out,
+      l.id as leave_id
+    FROM users u
+    LEFT JOIN attendance a ON a.user_id = u.id AND a.date = ?
+    LEFT JOIN leaves l ON l.user_id = u.id
+                       AND l.status = 'Approved'
+                       AND ? BETWEEN l.start_date AND l.end_date
+    ORDER BY u.name ASC
+  `;
+  db.all(sql, [date, date], (err, rows) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: 'DB error', error: err.message });
+    }
+    const employees = rows.map(r => {
+      let hoursWorked = null;
+      let status;
+      if (r.leave_id) {
+        status = 'on_leave';
+      } else if (r.clock_in && r.clock_out) {
+        hoursWorked = Math.round((new Date(r.clock_out) - new Date(r.clock_in)) / 36000) / 100;
+        status = 'present';
+      } else if (r.clock_in) {
+        hoursWorked = Math.round((Date.now() - new Date(r.clock_in)) / 36000) / 100;
+        status = 'in_progress';
+      } else {
+        status = 'absent';
+      }
+      return {
+        id: r.id,
+        name: r.name,
+        email: r.email,
+        role: r.role,
+        clock_in: r.clock_in || null,
+        clock_out: r.clock_out || null,
+        hoursWorked,
+        underHours: hoursWorked !== null && hoursWorked < 4,
+        status,
+      };
+    });
+    const summary = {
+      total: employees.length,
+      present: employees.filter(e => e.status === 'present').length,
+      inProgress: employees.filter(e => e.status === 'in_progress').length,
+      onLeave: employees.filter(e => e.status === 'on_leave').length,
+      absent: employees.filter(e => e.status === 'absent').length,
+      underHours: employees.filter(e => e.underHours).length,
+    };
+    db.all(
+      `SELECT l.id, l.start_date, l.end_date, l.reason, u.name, u.role
+       FROM leaves l JOIN users u ON u.id = l.user_id
+       WHERE l.status = 'Pending' ORDER BY l.created_at DESC`,
+      [],
+      (e2, pendingLeaves) => {
+        if (e2) {
+          console.error(e2);
+          return res.status(500).json({ message: 'DB error', error: e2.message });
+        }
+        res.json({
+          date,
+          employees,
+          summary: { ...summary, pendingLeaves: pendingLeaves.length },
+          pendingLeaves,
+        });
+      }
+    );
+  });
+};
+
 exports.allAttendance = (req, res) => {
   const { date } = req.query;
   const targetDate = date || today();
