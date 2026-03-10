@@ -16,15 +16,29 @@ exports.login = (req, res) => {
 };
 
 exports.register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, manager_email } = req.body;
   if (!name || !email || !password) return res.status(400).json({ message: 'Name, email and password required' });
   if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) return res.status(400).json({ message: 'Invalid email' });
   if (password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
+
   try {
+    let managerId = null;
+    if (manager_email) {
+      const manager = await new Promise((resolve, reject) => {
+        db.get('SELECT id FROM users WHERE email = ?', [manager_email], (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        });
+      });
+      if (!manager) return res.status(400).json({ message: 'Manager email not found' });
+      managerId = manager.id;
+    }
+
     const hash = await bcrypt.hash(password, 10);
+    
     db.run(
-      'INSERT INTO users(name, email, password, role) VALUES(?,?,?,?)',
-      [name, email, hash, 'Employee'],
+      'INSERT INTO users(name, email, password, role, reports_to) VALUES(?,?,?,?,?)',
+      [name, email, hash, 'Employee', managerId],
       function (err) {
         if (err) {
           if (String(err.message).includes('UNIQUE')) return res.status(409).json({ message: 'Email already registered' });
@@ -41,6 +55,7 @@ exports.register = async (req, res) => {
       }
     );
   } catch (e) {
+    console.error(e);
     return res.status(500).json({ message: 'Server error' });
   }
 };

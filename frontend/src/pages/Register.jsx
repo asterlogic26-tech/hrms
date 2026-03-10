@@ -6,7 +6,7 @@ import { Link, useNavigate } from 'react-router-dom'
 export default function Register() {
   const navigate = useNavigate()
   const { user, login } = useAuth()
-  const [form, setForm] = useState({ name: '', email: '', password: '' })
+  const [form, setForm] = useState({ name: '', email: '', password: '', manager_email: '' })
   const [error, setError] = useState('')
 
   const submit = async (e) => {
@@ -33,6 +33,7 @@ export default function Register() {
         <form onSubmit={submit} className="space-y-4">
           <input className="w-full border rounded px-3 py-2" placeholder="Full name" value={form.name} onChange={(e)=>setForm({...form, name:e.target.value})} />
           <input className="w-full border rounded px-3 py-2" placeholder="Email" value={form.email} onChange={(e)=>setForm({...form, email:e.target.value})} />
+          <input className="w-full border rounded px-3 py-2" placeholder="Manager Email (optional)" value={form.manager_email} onChange={(e)=>setForm({...form, manager_email:e.target.value})} />
           <input className="w-full border rounded px-3 py-2" type="password" placeholder="Password (min 8 chars)" value={form.password} onChange={(e)=>setForm({...form, password:e.target.value})} />
           {error ? <div className="text-red-600 text-sm">{error}</div> : null}
           <button className="btn-primary w-full" type="submit">Register</button>

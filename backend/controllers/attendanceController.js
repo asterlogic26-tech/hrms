@@ -53,3 +53,11 @@ exports.summary = (req, res) => {
     });
   });
 };
+
+exports.myAttendance = (req, res) => {
+  const userId = req.user.id;
+  db.all('SELECT date, clock_in, clock_out, status FROM attendance WHERE user_id = ? ORDER BY date DESC LIMIT 31', [userId], (err, rows) => {
+    if (err) return res.status(500).json({ message: 'DB error' });
+    res.json(rows);
+  });
+};
