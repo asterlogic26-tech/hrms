@@ -5,18 +5,16 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_DIR"
 
 echo "==> Updating repo"
-# Preserve the production DB across the pull.
-# The DB was previously committed and may be tracked with local changes on the
-# server, which would cause `git pull` to abort.  We back it up, reset the
-# tracked copy so the pull can proceed, then restore the live data afterwards.
+# When run manually: preserve the production DB, pull latest, then restore.
+# (The CI workflow handles this same dance before calling this script, so the
+# git pull here will typically be a fast no-op in that case.)
 if [[ -f backend/hrms.db ]]; then
-  cp backend/hrms.db backend/hrms.db.bak
+  cp backend/hrms.db /tmp/hrms.db.bak
 fi
 git checkout -- backend/hrms.db 2>/dev/null || true
 git pull --ff-only
-# Restore production DB (the pull removes it from tracking / deletes the file)
-if [[ -f backend/hrms.db.bak ]]; then
-  mv backend/hrms.db.bak backend/hrms.db
+if [[ -f /tmp/hrms.db.bak ]]; then
+  mv /tmp/hrms.db.bak backend/hrms.db
 fi
 
 echo "==> Backend install"
