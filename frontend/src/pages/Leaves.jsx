@@ -10,13 +10,27 @@ export default function Leaves() {
   const [msg, setMsg] = useState('')
 
   const load = async () => {
-    try {
-      const { data } = await api.get('/leaves')
-      setLeaves(data)
-    } catch {}
+    const { data } = await api.get('/leaves')
+    setLeaves(data)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        const { data } = await api.get('/leaves')
+        if (cancelled) return
+        setLeaves(data)
+      } catch (e) {
+        console.error(e)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const apply = async (e) => {
     e.preventDefault()
@@ -34,8 +48,10 @@ export default function Leaves() {
   const approve = async (id, ok) => {
     try {
       await api.put('/leaves/approve', { leave_id: id, approve: ok })
-      load()
-    } catch {}
+      await load()
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   return (

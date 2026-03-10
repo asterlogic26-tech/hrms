@@ -25,18 +25,37 @@ export default function Attendance() {
     }
   }
 
-  const fetchHolidays = async () => {
-    try {
-      const { data } = await api.get('/holidays')
-      setHolidays(data)
-    } catch (e) {
-      console.error(e)
-    }
-  }
+  useEffect(() => {
+    let cancelled = false
 
-  useEffect(() => { 
-    fetchHistory()
-    fetchHolidays()
+    ;(async () => {
+      try {
+        const [{ data: attendanceData }, { data: holidayData }] = await Promise.all([
+          api.get('/attendance/my-attendance'),
+          api.get('/holidays'),
+        ])
+
+        if (cancelled) return
+
+        setHistory(attendanceData)
+        setHolidays(holidayData)
+
+        const today = new Date().toISOString().slice(0, 10)
+        const todayRecord = attendanceData.find((d) => d.date === today)
+        if (todayRecord) {
+          if (todayRecord.clock_out) setTodayStatus('clocked_out')
+          else if (todayRecord.clock_in) setTodayStatus('clocked_in')
+        } else {
+          setTodayStatus(null)
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const clockIn = async () => {

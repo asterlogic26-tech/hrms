@@ -21,9 +21,12 @@ exports.approve = (req, res) => {
   if (!leave_id) return res.status(400).json({ message: 'Missing leave_id' });
   db.get('SELECT l.*, u.name, u.role, u.reports_to FROM leaves l JOIN users u ON u.id = l.user_id WHERE l.id = ?', [leave_id], (err, leave) => {
     if (err || !leave) return res.status(404).json({ message: 'Leave not found' });
+    if (leave.status !== 'Pending') return res.status(400).json({ message: 'Leave already processed' });
+
     if (approver.role === 'Founder') {
-      if (!(leave.role === 'Manager' && leave.name === 'Shubham')) return res.status(403).json({ message: 'Not allowed' });
+      // Founder can approve/reject any leave.
     } else if (approver.role === 'Manager') {
+      // Manager can approve/reject only direct reports.
       if (leave.reports_to !== approver.id) return res.status(403).json({ message: 'Not allowed' });
     } else {
       return res.status(403).json({ message: 'Not allowed' });

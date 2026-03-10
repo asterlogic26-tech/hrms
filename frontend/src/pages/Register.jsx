@@ -1,11 +1,9 @@
 import { useState } from 'react'
 import api from '../services/api'
-import { useAuth } from '../hooks/useAuth'
 import { Link, useNavigate } from 'react-router-dom'
 
 export default function Register() {
   const navigate = useNavigate()
-  const { user, login } = useAuth()
   const [form, setForm] = useState({ name: '', email: '', password: '', manager_email: '' })
   const [error, setError] = useState('')
 

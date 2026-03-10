@@ -7,7 +7,6 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend)
 
 export default function Dashboard() {
-  const { user } = useAuth()
   const [summary, setSummary] = useState({ totalEmployees: 0, presentToday: 0 })
 
   useEffect(() => {

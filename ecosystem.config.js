@@ -6,9 +6,8 @@ module.exports = {
       instances: 1,
       exec_mode: 'fork',
       env: {
-        PORT: 5000,
-        JWT_SECRET: 'change_me_secure',
-        FRONTEND_ORIGIN: 'http://localhost'
+        PORT: process.env.PORT || 5000,
+        FRONTEND_ORIGIN: process.env.FRONTEND_ORIGIN || 'http://localhost:5173'
       }
     }
   ]
