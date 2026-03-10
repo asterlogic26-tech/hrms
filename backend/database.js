@@ -71,6 +71,14 @@ db.serialize(() => {
     meta TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS holidays (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date DATE UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    type TEXT DEFAULT 'Holiday',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
 });
 
 module.exports = db;
