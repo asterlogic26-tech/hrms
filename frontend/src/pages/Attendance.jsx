@@ -1,12 +1,16 @@
 import Layout from '../components/Layout'
 import api from '../services/api'
 import { useEffect, useState } from 'react'
+import { useAuth } from '../hooks/useAuth'
 
 export default function Attendance() {
+  const { user } = useAuth()
   const [msg, setMsg] = useState('')
   const [history, setHistory] = useState([])
   const [todayStatus, setTodayStatus] = useState(null)
   const [holidays, setHolidays] = useState([])
+  const [allToday, setAllToday] = useState([])
+  const [allError, setAllError] = useState('')
 
   const fetchHistory = async () => {
     try {
@@ -58,13 +62,29 @@ export default function Attendance() {
     }
   }, [])
 
+  useEffect(() => {
+    if (user?.role !== 'Founder') return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const { data } = await api.get('/attendance/all')
+        if (!cancelled) setAllToday(data.rows || [])
+      } catch (e) {
+        if (!cancelled) setAllError(e.response?.data?.message || 'Failed to load all attendance')
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [user?.role])
+
   const clockIn = async () => {
     try {
       await api.post('/attendance/clockin')
       setMsg('Clocked in successfully')
       fetchHistory()
     } catch (e) {
-      setMsg(e.response?.data?.message || 'Error')
+      setMsg(e.response?.data?.error || e.response?.data?.message || 'Error')
     }
   }
 
@@ -74,7 +94,7 @@ export default function Attendance() {
       setMsg('Clocked out successfully')
       fetchHistory()
     } catch (e) {
-      setMsg(e.response?.data?.message || 'Error')
+      setMsg(e.response?.data?.error || e.response?.data?.message || 'Error')
     }
   }
 
@@ -200,6 +220,39 @@ export default function Attendance() {
             </div>
           </div>
         </div>
+
+        {user?.role === 'Founder' ? (
+          <div className="card p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">All Attendance (Today)</h2>
+            {allError ? <div className="text-sm text-red-600 mb-2">{allError}</div> : null}
+            {allToday.length === 0 ? (
+              <div className="text-sm text-gray-500">No attendance records for today.</div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-500">
+                    <th className="py-2">Name</th>
+                    <th>Email</th>
+                    <th>In</th>
+                    <th>Out</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allToday.map((r) => (
+                    <tr key={r.user_id} className="border-t">
+                      <td className="py-2">{r.name}</td>
+                      <td>{r.email}</td>
+                      <td>{r.clock_in ? new Date(r.clock_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '-'}</td>
+                      <td>{r.clock_out ? new Date(r.clock_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '-'}</td>
+                      <td>{r.status || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        ) : null}
       </div>
     </Layout>
   )

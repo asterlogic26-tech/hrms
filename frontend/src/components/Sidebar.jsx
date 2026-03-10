@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Users, CalendarCheck2, FileCheck2, LayoutDashboard, Settings } from 'lucide-react'
+import { Users, CalendarCheck2, FileCheck2, LayoutDashboard, Settings, CalendarDays } from 'lucide-react'
 
 export default function Sidebar({ role }) {
   return (
@@ -12,6 +12,7 @@ export default function Sidebar({ role }) {
         <Item to="/" label="Dashboard" icon={<LayoutDashboard size={18} />} />
         <Item to="/attendance" label="Attendance" icon={<CalendarCheck2 size={18} />} />
         <Item to="/leaves" label="Leaves" icon={<FileCheck2 size={18} />} />
+        <Item to="/holidays" label="Holidays" icon={<CalendarDays size={18} />} />
         <Item to="/employees" label="Employees" icon={<Users size={18} />} />
         {role === 'Founder' ? <Item to="/settings" label="Settings" icon={<Settings size={18} />} /> : null}
       </nav>

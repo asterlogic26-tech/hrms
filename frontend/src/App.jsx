@@ -7,6 +7,7 @@ import Leaves from './pages/Leaves'
 import Employees from './pages/Employees'
 import Settings from './pages/Settings'
 import Register from './pages/Register'
+import Holidays from './pages/Holidays'
 
 function Protected({ children }) {
   const { user } = useAuth()
@@ -22,6 +23,7 @@ export default function App() {
       <Route path="/" element={<Protected><Dashboard /></Protected>} />
       <Route path="/attendance" element={<Protected><Attendance /></Protected>} />
       <Route path="/leaves" element={<Protected><Leaves /></Protected>} />
+      <Route path="/holidays" element={<Protected><Holidays /></Protected>} />
       <Route path="/employees" element={<Protected><Employees /></Protected>} />
       <Route path="/settings" element={<Protected><Settings /></Protected>} />
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -8,6 +8,7 @@ export default function Leaves() {
   const [leaves, setLeaves] = useState([])
   const [form, setForm] = useState({ start_date: '', end_date: '', reason: '' })
   const [msg, setMsg] = useState('')
+  const [error, setError] = useState('')
 
   const load = async () => {
     const { data } = await api.get('/leaves')
@@ -24,6 +25,7 @@ export default function Leaves() {
         setLeaves(data)
       } catch (e) {
         console.error(e)
+        if (!cancelled) setError(e.response?.data?.message || 'Failed to load leaves')
       }
     })()
 
@@ -35,13 +37,14 @@ export default function Leaves() {
   const apply = async (e) => {
     e.preventDefault()
     setMsg('')
+    setError('')
     try {
       await api.post('/leaves/apply', form)
       setForm({ start_date: '', end_date: '', reason: '' })
       setMsg('Leave applied')
       load()
     } catch (e) {
-      setMsg(e.response?.data?.message || 'Error')
+      setError(e.response?.data?.message || 'Error')
     }
   }
 
@@ -51,8 +54,12 @@ export default function Leaves() {
       await load()
     } catch (e) {
       console.error(e)
+      setError(e.response?.data?.message || 'Failed to update leave')
     }
   }
+
+  const canApprove = ['Manager', 'Founder'].includes(user?.role)
+  const pending = canApprove ? leaves.filter((l) => l.status === 'Pending') : []
 
   return (
     <Layout>
@@ -65,10 +72,18 @@ export default function Leaves() {
             <input className="w-full border rounded px-3 py-2" placeholder="Reason" value={form.reason} onChange={e=>setForm({...form, reason:e.target.value})} />
             <button className="btn-primary">Apply</button>
             {msg ? <div className="text-sm text-gray-600">{msg}</div> : null}
+            {error ? <div className="text-sm text-red-600">{error}</div> : null}
           </form>
         </div>
         <div className="lg:col-span-2 card p-4">
-          <div className="font-semibold mb-2">Leaves</div>
+          <div className="font-semibold mb-2">
+            {canApprove ? 'Leave Requests' : 'My Leaves'}
+          </div>
+          {canApprove ? (
+            <div className="text-sm text-gray-600 mb-3">
+              Pending approvals: <span className="font-semibold">{pending.length}</span>
+            </div>
+          ) : null}
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-gray-500">
@@ -87,7 +102,7 @@ export default function Leaves() {
                   <td>{l.end_date}</td>
                   <td>{l.status}</td>
                   <td className="space-x-2">
-                    {['Manager','Founder'].includes(user.role) && l.status === 'Pending' ? (
+                    {canApprove && l.status === 'Pending' ? (
                       <>
                         <button onClick={()=>approve(l.id, true)} className="btn-primary">Approve</button>
                         <button onClick={()=>approve(l.id, false)} className="px-3 py-2 rounded bg-gray-800 text-white">Reject</button>

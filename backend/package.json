@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "purge": "node seed.js --purge"
   },
   "keywords": [],
   "author": "",
