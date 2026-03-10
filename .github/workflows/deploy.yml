@@ -32,10 +32,12 @@ jobs:
               cp backend/hrms.db /tmp/hrms.db.bak
             fi
 
-            # Reset any tracked DB files so git pull doesn't abort
-            git checkout -- backend/hrms.db 2>/dev/null || true
-
-            git pull origin main
+            # Hard-reset ALL tracked files to the latest remote commit.
+            # This handles deploy.sh, backend/hrms.db, or any other tracked
+            # file that may have local changes (e.g. from line-ending normalization).
+            # Untracked/ignored files (backend/data/hrms.db, .env) are not touched.
+            git fetch origin main
+            git reset --hard FETCH_HEAD
 
             # Restore production DB to the canonical location
             mkdir -p backend/data

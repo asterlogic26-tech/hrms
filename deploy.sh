@@ -12,8 +12,10 @@ if [[ -f backend/data/hrms.db ]]; then
 elif [[ -f backend/hrms.db ]]; then
   cp backend/hrms.db /tmp/hrms.db.bak
 fi
-git checkout -- backend/hrms.db 2>/dev/null || true
-git pull --ff-only
+# Hard-reset ALL tracked files then pull (handles any locally modified tracked
+# files such as deploy.sh itself, not just the DB).
+git fetch origin main
+git reset --hard FETCH_HEAD
 mkdir -p backend/data
 if [[ -f /tmp/hrms.db.bak ]]; then
   mv /tmp/hrms.db.bak backend/data/hrms.db
