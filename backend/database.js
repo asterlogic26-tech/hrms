@@ -16,10 +16,15 @@ const db = new sqlite3.Database(dbPath, (err) => {
   }
 });
 
-db.configure('busyTimeout', 5000);
+db.configure('busyTimeout', 10000);
 
 // Create tables
 db.serialize(() => {
+  // WAL mode: readers don't block writers, much more resilient to concurrent
+  // access and to process crashes leaving stale journal files.
+  db.run('PRAGMA journal_mode = WAL');
+  db.run('PRAGMA synchronous = NORMAL');
+
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,

@@ -47,6 +47,11 @@ if [[ "${SKIP_SEED:-}" != "1" ]]; then
   echo "==> Seeding (idempotent)"
   node seed.js || true
 fi
+# Re-apply permissions after seed – seed creates WAL/SHM files that PM2 must
+# be able to write.  chmod 666 on all files in data/ covers hrms.db-wal and
+# hrms.db-shm so the app user is never locked out after a deploy.
+chmod 777 data 2>/dev/null || true
+chmod 666 data/* 2>/dev/null || true
 
 cd ..
 

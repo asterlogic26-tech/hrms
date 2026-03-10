@@ -54,7 +54,10 @@ async function seed() {
     );
   }
   console.log('Seed complete (admin only)');
-  process.exit(0);
+  db.close(() => process.exit(0));
 }
 
-seed();
+seed().catch(e => {
+  console.error('Seed failed:', e.message);
+  db.close(() => process.exit(1));
+});

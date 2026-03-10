@@ -71,10 +71,10 @@ async function run() {
   fs.writeFileSync(MARKER, new Date().toISOString() + '\n');
 
   console.log('Purge v2 complete – only core team remains.');
-  process.exit(0);
+  db.close(() => process.exit(0));
 }
 
 run().catch((e) => {
   console.error('Purge v2 failed:', e.message);
-  process.exit(1);
+  db.close(() => process.exit(1));
 });
