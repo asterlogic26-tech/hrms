@@ -1,20 +1,27 @@
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 export default function Login() {
   const { login } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const submit = async (e) => {
     e.preventDefault()
     setError('')
     try {
+      setLoading(true)
       await login(email, password)
+      navigate('/', { replace: true })
     } catch {
       setError('Invalid credentials')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -29,7 +36,9 @@ export default function Login() {
           <input className="w-full border rounded px-3 py-2" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} />
           <input className="w-full border rounded px-3 py-2" type="password" placeholder="Password" value={password} onChange={(e)=>setPassword(e.target.value)} />
           {error ? <div className="text-red-600 text-sm">{error}</div> : null}
-          <button className="btn-primary w-full" type="submit">Login</button>
+          <button className="btn-primary w-full" type="submit" disabled={loading}>
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
         </form>
         <div className="text-xs text-gray-500 mt-3">New here? <Link className="underline" to="/register">Create an account</Link></div>
       </div>
