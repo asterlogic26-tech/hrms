@@ -42,5 +42,9 @@ jobs:
             if [ -f /tmp/hrms.db.bak ]; then
               mv /tmp/hrms.db.bak backend/data/hrms.db
             fi
+            # Fix permissions so the app process (PM2) can write the DB
+            chmod 666 backend/data/hrms.db 2>/dev/null || true
+            # Remove the old duplicate DB at the legacy path
+            rm -f backend/hrms.db
 
             bash deploy.sh

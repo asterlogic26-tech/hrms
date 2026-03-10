@@ -1,46 +1,80 @@
 /**
- * One-time migration: remove all users except shalini@asterlogic.in
- * and their associated data (attendance, leaves, employees, audit_logs).
+ * Cleanup migration (v2): keep only the core team, delete test accounts.
  *
- * A marker file is created in backend/data/ after the first run so this
- * script is a no-op on every subsequent deploy.
+ * Users kept:
+ *   shalini@asterlogic.in   – Founder  (super admin)
+ *   shubham@asterlogic.local – Manager
+ *   abhishek@asterlogic.local – Team Lead
+ *   aditya@asterlogic.local  – Team Lead  (promoted from Employee)
+ *
+ * Everyone else is removed along with their attendance, leaves, and audit logs.
+ *
+ * Uses a versioned marker file (purge_v2_done) so an old failed run does NOT
+ * block this version from executing.
  */
 const path = require('path');
-const fs = require('fs');
+const fs   = require('fs');
 
-const markerFile = path.resolve(__dirname, '../data/.purge_done');
+const MARKER = path.resolve(__dirname, '../data/.purge_v2_done');
 
-if (fs.existsSync(markerFile)) {
-  console.log('One-time purge already completed – skipping.');
+if (fs.existsSync(MARKER)) {
+  console.log('Purge v2 already done – skipping.');
   process.exit(0);
 }
 
 const db = require('../database');
-const ADMIN_EMAIL = 'shalini@asterlogic.in';
+
+// Emails of users we want to KEEP
+const KEEP = [
+  'shalini@asterlogic.in',
+  'shubham@asterlogic.local',
+  'abhishek@asterlogic.local',
+  'aditya@asterlogic.local',
+];
+
+const placeholders = KEEP.map(() => '?').join(',');
 
 async function run() {
-  const steps = [
-    'DELETE FROM attendance  WHERE user_id IN (SELECT id FROM users WHERE email <> ?)',
-    'DELETE FROM leaves      WHERE user_id IN (SELECT id FROM users WHERE email <> ?)',
-    'DELETE FROM audit_logs  WHERE user_id IN (SELECT id FROM users WHERE email <> ?)',
-    'DELETE FROM employees   WHERE user_id IN (SELECT id FROM users WHERE email <> ?)',
-    'DELETE FROM users       WHERE email <> ?',
+  // Remove data belonging to unwanted users
+  const deleteData = [
+    `DELETE FROM attendance WHERE user_id IN (SELECT id FROM users WHERE email NOT IN (${placeholders}))`,
+    `DELETE FROM leaves     WHERE user_id IN (SELECT id FROM users WHERE email NOT IN (${placeholders}))`,
+    `DELETE FROM audit_logs WHERE user_id IN (SELECT id FROM users WHERE email NOT IN (${placeholders}))`,
+    `DELETE FROM employees  WHERE user_id IN (SELECT id FROM users WHERE email NOT IN (${placeholders}))`,
+    `DELETE FROM users      WHERE email NOT IN (${placeholders})`,
   ];
 
-  for (const sql of steps) {
+  for (const sql of deleteData) {
     await new Promise((resolve, reject) =>
-      db.run(sql, [ADMIN_EMAIL], (err) => (err ? reject(err) : resolve()))
+      db.run(sql, KEEP, (err) => (err ? reject(err) : resolve()))
     );
   }
 
-  // Write marker so this never runs again
-  fs.mkdirSync(path.dirname(markerFile), { recursive: true });
-  fs.writeFileSync(markerFile, new Date().toISOString() + '\n');
-  console.log('One-time purge complete – all non-admin users removed.');
+  // Ensure correct roles for the manager dropdown
+  // (Founder/Manager/Team Lead appear in the dropdown)
+  const roleUpdates = [
+    ['Founder',   'shalini@asterlogic.in'],
+    ['Manager',   'shubham@asterlogic.local'],
+    ['Team Lead', 'abhishek@asterlogic.local'],
+    ['Team Lead', 'aditya@asterlogic.local'],
+  ];
+
+  for (const [role, email] of roleUpdates) {
+    await new Promise((resolve, reject) =>
+      db.run('UPDATE users SET role = ? WHERE email = ?', [role, email],
+        (err) => (err ? reject(err) : resolve()))
+    );
+  }
+
+  // Write versioned marker
+  fs.mkdirSync(path.dirname(MARKER), { recursive: true });
+  fs.writeFileSync(MARKER, new Date().toISOString() + '\n');
+
+  console.log('Purge v2 complete – only core team remains.');
   process.exit(0);
 }
 
 run().catch((e) => {
-  console.error('One-time purge failed:', e.message);
+  console.error('Purge v2 failed:', e.message);
   process.exit(1);
 });

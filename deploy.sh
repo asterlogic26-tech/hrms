@@ -18,6 +18,10 @@ mkdir -p backend/data
 if [[ -f /tmp/hrms.db.bak ]]; then
   mv /tmp/hrms.db.bak backend/data/hrms.db
 fi
+# Fix permissions so the app process (PM2) can write to the DB
+chmod 666 backend/data/hrms.db 2>/dev/null || true
+# Remove the old duplicate DB at the legacy path
+rm -f backend/hrms.db
 
 echo "==> Backend install"
 cd backend
@@ -31,6 +35,9 @@ if [[ -f .env.example && ! -f .env ]]; then
   echo "==> Creating backend/.env from .env.example (please update secrets)"
   cp .env.example .env
 fi
+# Always keep DB_PATH pointing to the canonical location
+grep -v '^DB_PATH=' .env > .env.tmp && mv .env.tmp .env
+echo 'DB_PATH=./data/hrms.db' >> .env
 
 if [[ "${SKIP_SEED:-}" != "1" ]]; then
   echo "==> Seeding (idempotent)"
