@@ -18,7 +18,9 @@ mkdir -p backend/data
 if [[ -f /tmp/hrms.db.bak ]]; then
   mv /tmp/hrms.db.bak backend/data/hrms.db
 fi
-# Fix permissions so the app process (PM2) can write to the DB
+# Ensure the app process (PM2) can read/write the DB and create journal files.
+# The DIRECTORY must also be writable (SQLite needs to create -wal/-shm files).
+chmod 777 backend/data 2>/dev/null || true
 chmod 666 backend/data/hrms.db 2>/dev/null || true
 # Remove the old duplicate DB at the legacy path
 rm -f backend/hrms.db
@@ -35,17 +37,15 @@ if [[ -f .env.example && ! -f .env ]]; then
   echo "==> Creating backend/.env from .env.example (please update secrets)"
   cp .env.example .env
 fi
-# Always keep DB_PATH pointing to the canonical location
+# Remove any stale DB_PATH override – let database.js use its __dirname-based
+# default (backend/data/hrms.db), which is correct regardless of process.cwd()
 grep -v '^DB_PATH=' .env > .env.tmp && mv .env.tmp .env
-echo 'DB_PATH=./data/hrms.db' >> .env
 
 if [[ "${SKIP_SEED:-}" != "1" ]]; then
   echo "==> Seeding (idempotent)"
   node seed.js || true
 fi
 
-echo "==> Running one-time migrations"
-node scripts/one_time_purge.js || true
 cd ..
 
 echo "==> Frontend build"

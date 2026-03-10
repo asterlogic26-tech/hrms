@@ -7,7 +7,9 @@ const path = require('path');
 const db = require('./database');
 const rateLimit = require('express-rate-limit');
 
-dotenv.config();
+// Load .env from the backend directory regardless of process.cwd()
+// (PM2 starts from the repo root, so plain dotenv.config() loads the wrong path)
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const app = express();
 
