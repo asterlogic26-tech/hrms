@@ -18,6 +18,18 @@ exports.list = (req, res) => {
   });
 };
 
+exports.updateRole = (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body;
+  const VALID = ['Founder', 'Manager', 'Team Lead', 'Employee'];
+  if (!role || !VALID.includes(role)) return res.status(400).json({ message: 'Invalid role' });
+  db.run('UPDATE users SET role = ? WHERE id = ?', [role, id], function (err) {
+    if (err) return res.status(500).json({ message: 'DB error' });
+    if (this.changes === 0) return res.status(404).json({ message: 'User not found' });
+    res.json({ id, role });
+  });
+};
+
 exports.create = async (req, res) => {
   const { name, email, password, role, reports_to, department, designation } = req.body;
   if (!name || !email || !password || !role) return res.status(400).json({ message: 'Missing fields' });
