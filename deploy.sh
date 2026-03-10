@@ -5,16 +5,18 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_DIR"
 
 echo "==> Updating repo"
-# When run manually: preserve the production DB, pull latest, then restore.
-# (The CI workflow handles this same dance before calling this script, so the
-# git pull here will typically be a fast no-op in that case.)
-if [[ -f backend/hrms.db ]]; then
+# Backup the live DB from whichever path it lives at (old: backend/hrms.db,
+# new default: backend/data/hrms.db).  Always restore to the canonical path.
+if [[ -f backend/data/hrms.db ]]; then
+  cp backend/data/hrms.db /tmp/hrms.db.bak
+elif [[ -f backend/hrms.db ]]; then
   cp backend/hrms.db /tmp/hrms.db.bak
 fi
 git checkout -- backend/hrms.db 2>/dev/null || true
 git pull --ff-only
+mkdir -p backend/data
 if [[ -f /tmp/hrms.db.bak ]]; then
-  mv /tmp/hrms.db.bak backend/hrms.db
+  mv /tmp/hrms.db.bak backend/data/hrms.db
 fi
 
 echo "==> Backend install"
@@ -34,6 +36,9 @@ if [[ "${SKIP_SEED:-}" != "1" ]]; then
   echo "==> Seeding (idempotent)"
   node seed.js || true
 fi
+
+echo "==> Running one-time migrations"
+node scripts/one_time_purge.js || true
 cd ..
 
 echo "==> Frontend build"

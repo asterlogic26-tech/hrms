@@ -25,8 +25,8 @@ exports.approve = (req, res) => {
 
     if (approver.role === 'Founder') {
       // Founder can approve/reject any leave.
-    } else if (approver.role === 'Manager') {
-      // Manager can approve/reject only direct reports.
+    } else if (approver.role === 'Manager' || approver.role === 'Team Lead') {
+      // Manager / Team Lead can approve/reject only their direct reports.
       if (leave.reports_to !== approver.id) return res.status(403).json({ message: 'Not allowed' });
     } else {
       return res.status(403).json({ message: 'Not allowed' });
@@ -47,7 +47,7 @@ exports.list = (req, res) => {
       if (e) return res.status(500).json({ message: 'DB error' });
       res.json(rows);
     });
-  } else if (user.role === 'Manager') {
+  } else if (user.role === 'Manager' || user.role === 'Team Lead') {
     db.all(
       'SELECT l.*, u.name FROM leaves l JOIN users u ON u.id = l.user_id WHERE u.reports_to = ? ORDER BY l.created_at DESC',
       [user.id],

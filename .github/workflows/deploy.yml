@@ -23,17 +23,24 @@ jobs:
             set -e
             cd /var/www/asterlogic-hrms/hrms
 
-            # Preserve the live production DB before git operations.
-            # The DB is a SQLite file modified at runtime; git pull aborts if it
-            # has local changes.  Back it up, reset the tracked copy, pull, then
-            # restore the live data.
-            if [ -f backend/hrms.db ]; then
+            # Backup the live DB from whichever path it currently lives at.
+            # Old code used backend/hrms.db; new code uses backend/data/hrms.db.
+            # We always restore to backend/data/hrms.db (canonical location).
+            if [ -f backend/data/hrms.db ]; then
+              cp backend/data/hrms.db /tmp/hrms.db.bak
+            elif [ -f backend/hrms.db ]; then
               cp backend/hrms.db /tmp/hrms.db.bak
             fi
+
+            # Reset any tracked DB files so git pull doesn't abort
             git checkout -- backend/hrms.db 2>/dev/null || true
+
             git pull origin main
+
+            # Restore production DB to the canonical location
+            mkdir -p backend/data
             if [ -f /tmp/hrms.db.bak ]; then
-              mv /tmp/hrms.db.bak backend/hrms.db
+              mv /tmp/hrms.db.bak backend/data/hrms.db
             fi
 
             bash deploy.sh

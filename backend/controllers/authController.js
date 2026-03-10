@@ -15,6 +15,18 @@ exports.login = (req, res) => {
   });
 };
 
+// Public endpoint – returns users who can act as managers (for the register form).
+exports.listManagers = (req, res) => {
+  db.all(
+    "SELECT id, name, email, role FROM users WHERE role IN ('Founder','Manager','Team Lead') ORDER BY name ASC",
+    [],
+    (err, rows) => {
+      if (err) return res.status(500).json({ message: 'DB error' });
+      res.json(rows);
+    }
+  );
+};
+
 exports.register = async (req, res) => {
   const { name, email, password, manager_email } = req.body;
   if (!name || !email || !password) return res.status(400).json({ message: 'Name, email and password required' });

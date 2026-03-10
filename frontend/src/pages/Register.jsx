@@ -1,18 +1,22 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import api from '../services/api'
 import { Link, useNavigate } from 'react-router-dom'
 
 export default function Register() {
   const navigate = useNavigate()
   const [form, setForm] = useState({ name: '', email: '', password: '', manager_email: '' })
+  const [managers, setManagers] = useState([])
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    api.get('/auth/managers').then(({ data }) => setManagers(data)).catch(() => {})
+  }, [])
 
   const submit = async (e) => {
     e.preventDefault()
     setError('')
     try {
       const { data } = await api.post('/auth/register', form)
-      // auto-login
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
       navigate('/')
@@ -29,14 +33,47 @@ export default function Register() {
           <div className="text-2xl font-semibold">Create your account</div>
         </div>
         <form onSubmit={submit} className="space-y-4">
-          <input className="w-full border rounded px-3 py-2" placeholder="Full name" value={form.name} onChange={(e)=>setForm({...form, name:e.target.value})} />
-          <input className="w-full border rounded px-3 py-2" placeholder="Email" value={form.email} onChange={(e)=>setForm({...form, email:e.target.value})} />
-          <input className="w-full border rounded px-3 py-2" placeholder="Manager Email (optional)" value={form.manager_email} onChange={(e)=>setForm({...form, manager_email:e.target.value})} />
-          <input className="w-full border rounded px-3 py-2" type="password" placeholder="Password (min 8 chars)" value={form.password} onChange={(e)=>setForm({...form, password:e.target.value})} />
+          <input
+            className="w-full border rounded px-3 py-2"
+            placeholder="Full name"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            required
+          />
+          <input
+            className="w-full border rounded px-3 py-2"
+            placeholder="Email"
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            required
+          />
+          <select
+            className="w-full border rounded px-3 py-2 text-gray-700 bg-white"
+            value={form.manager_email}
+            onChange={(e) => setForm({ ...form, manager_email: e.target.value })}
+          >
+            <option value="">-- Select your manager (optional) --</option>
+            {managers.map((m) => (
+              <option key={m.id} value={m.email}>
+                {m.name} ({m.role})
+              </option>
+            ))}
+          </select>
+          <input
+            className="w-full border rounded px-3 py-2"
+            type="password"
+            placeholder="Password (min 8 chars)"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            required
+          />
           {error ? <div className="text-red-600 text-sm">{error}</div> : null}
           <button className="btn-primary w-full" type="submit">Register</button>
         </form>
-        <div className="text-xs text-gray-500 mt-3">Already have an account? <Link className="underline" to="/login">Login</Link></div>
+        <div className="text-xs text-gray-500 mt-3">
+          Already have an account? <Link className="underline" to="/login">Login</Link>
+        </div>
       </div>
     </div>
   )
