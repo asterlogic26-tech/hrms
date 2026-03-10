@@ -4,9 +4,7 @@ frontend/node_modules/
 # SQLite databases
 *.db
 *.db-journal
-backend/hrms.db
 backend/data/
 
 # Logs
 *.log
-
