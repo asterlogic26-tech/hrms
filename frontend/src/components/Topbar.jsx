@@ -1,5 +1,8 @@
 import { useAuth } from '../hooks/useAuth'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Bell } from 'lucide-react'
+import api from '../services/api'
 
 const PAGE_TITLES = {
   '/':           'Dashboard',
@@ -13,7 +16,19 @@ const PAGE_TITLES = {
 export default function Topbar() {
   const { user, logout } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
   const title = PAGE_TITLES[location.pathname] || 'HRMS'
+  const [pendingCount, setPendingCount] = useState(0)
+
+  const canApprove = ['Manager', 'Team Lead', 'Founder'].includes(user?.role)
+
+  useEffect(() => {
+    if (!canApprove) return
+    const fetch = () => api.get('/leaves/pending-count').then(r => setPendingCount(r.data.count)).catch(() => {})
+    fetch()
+    const timer = setInterval(fetch, 30000)
+    return () => clearInterval(timer)
+  }, [canApprove])
 
   const today = new Date().toLocaleDateString('en-IN', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -31,6 +46,20 @@ export default function Topbar() {
       </div>
 
       <div className="flex items-center gap-3">
+        {canApprove && (
+          <button
+            onClick={() => navigate('/leaves')}
+            className="relative p-1.5 text-gray-500 hover:text-brand transition-colors"
+            title="Pending leave requests"
+          >
+            <Bell size={18} />
+            {pendingCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                {pendingCount > 9 ? '9+' : pendingCount}
+              </span>
+            )}
+          </button>
+        )}
         <div className="text-right hidden sm:block">
           <div className="text-sm font-medium text-gray-700 leading-tight">{user?.name}</div>
           <div className="text-[11px] text-gray-400">{user?.role}</div>

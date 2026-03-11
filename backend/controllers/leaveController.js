@@ -1,4 +1,5 @@
 const db = require('../database');
+const { sendLeaveRequestEmail } = require('../services/mailer');
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -77,9 +78,39 @@ function insertLeave(userId, start_date, end_date, reason, leave_type, res) {
     [userId, start_date, end_date, reason || null, 'Pending', leave_type],
     function (err) {
       if (err) return res.status(500).json({ message: 'DB error' });
+      const leaveId = this.lastID;
       db.run('INSERT INTO audit_logs(user_id, action, meta) VALUES(?,?,?)',
         [userId, 'leave_apply', JSON.stringify({ start_date, end_date, leave_type })]);
-      res.status(201).json({ id: this.lastID });
+
+      // Notify approver(s) via email
+      db.get('SELECT name, email, reports_to FROM users WHERE id = ?', [userId], (e, employee) => {
+        if (e || !employee) return;
+        if (employee.reports_to) {
+          // Notify direct manager
+          db.get('SELECT name, email FROM users WHERE id = ?', [employee.reports_to], (e2, mgr) => {
+            if (!e2 && mgr) {
+              sendLeaveRequestEmail({
+                approverEmail: mgr.email, approverName: mgr.name,
+                employeeName: employee.name, leaveType: leave_type,
+                startDate: start_date, endDate: end_date, reason,
+              });
+            }
+          });
+        } else {
+          // No direct manager — notify all Founders
+          db.all("SELECT name, email FROM users WHERE role = 'Founder'", [], (e3, founders) => {
+            if (!e3 && founders) {
+              founders.forEach(f => sendLeaveRequestEmail({
+                approverEmail: f.email, approverName: f.name,
+                employeeName: employee.name, leaveType: leave_type,
+                startDate: start_date, endDate: end_date, reason,
+              }));
+            }
+          });
+        }
+      });
+
+      res.status(201).json({ id: leaveId });
     }
   );
 }
@@ -199,6 +230,34 @@ exports.getBalance = (req, res) => {
       }
     );
   });
+};
+
+// ── Pending Count (for notification badge) ─────────────────────────────────────
+
+exports.pendingCount = (req, res) => {
+  const user = req.user;
+  if (user.role === 'Founder') {
+    db.get(
+      `SELECT COUNT(*) AS count FROM leaves WHERE status = 'Pending'`,
+      [],
+      (err, row) => {
+        if (err) return res.status(500).json({ message: 'DB error' });
+        res.json({ count: row.count });
+      }
+    );
+  } else if (user.role === 'Manager' || user.role === 'Team Lead') {
+    db.get(
+      `SELECT COUNT(*) AS count FROM leaves l JOIN users u ON u.id = l.user_id
+       WHERE l.status = 'Pending' AND u.reports_to = ?`,
+      [user.id],
+      (err, row) => {
+        if (err) return res.status(500).json({ message: 'DB error' });
+        res.json({ count: row.count });
+      }
+    );
+  } else {
+    res.json({ count: 0 });
+  }
 };
 
 /**

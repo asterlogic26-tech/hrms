@@ -245,7 +245,7 @@ export default function Leaves() {
 // ── Leave Balance Bar ──────────────────────────────────────────────────────────
 
 function LeaveBalanceBar({ balance }) {
-  const { year, annual, sick } = balance
+  const { annual, sick } = balance
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -256,7 +256,6 @@ function LeaveBalanceBar({ balance }) {
         used={annual.used}
         remaining={annual.remaining}
         color={{ border: 'border-blue-500', bar: 'bg-blue-500', bg: 'bg-blue-50', text: 'text-blue-700', icon: 'text-blue-600' }}
-        year={year}
         renewNote="Renews every January"
       />
       <BalanceCard
@@ -266,14 +265,13 @@ function LeaveBalanceBar({ balance }) {
         used={sick.used}
         remaining={sick.remaining}
         color={{ border: 'border-purple-500', bar: 'bg-purple-500', bg: 'bg-purple-50', text: 'text-purple-700', icon: 'text-purple-600' }}
-        year={year}
         renewNote="Renews every January"
       />
     </div>
   )
 }
 
-function BalanceCard({ icon, label, total, used, remaining, color, year, renewNote }) {
+function BalanceCard({ icon, label, total, used, remaining, color, renewNote }) {
   const pct = total > 0 ? Math.round((used / total) * 100) : 0
   const isLow = remaining <= 1
 
@@ -288,7 +286,7 @@ function BalanceCard({ icon, label, total, used, remaining, color, year, renewNo
             <div className="font-semibold text-gray-800 text-sm">{label}</div>
             <div className="text-[11px] text-gray-400 flex items-center gap-1 mt-0.5">
               <Info size={10} />
-              {renewNote} · {year}
+              {renewNote}
             </div>
           </div>
         </div>

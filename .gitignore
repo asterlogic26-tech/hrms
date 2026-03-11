@@ -6,5 +6,9 @@ frontend/node_modules/
 *.db-journal
 backend/data/
 
+# Environment secrets
+backend/.env
+.env
+
 # Logs
 *.log

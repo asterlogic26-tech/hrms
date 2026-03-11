@@ -11,7 +11,11 @@
       "Bash(node d:/gen_employees.js)",
       "Bash(node -e \"const fs=require\\(''fs''\\); console.log\\(fs.readFileSync\\(''d:/AsterLogic/hrms/frontend/src/pages/Employees.jsx'',''utf8''\\).split\\(''\\\\n''\\).length\\)\")",
       "Bash(node -e \"const fs=require\\(''fs''\\); console.log\\(fs.readFileSync\\(''d:/gen_employees.js'',''utf8''\\).substring\\(0,100\\)\\)\")",
-      "Bash(node -e \"require\\(''''d:/AsterLogic/hrms/backend/database''''\\); require\\(''''d:/AsterLogic/hrms/backend/controllers/authController''''\\); require\\(''''d:/AsterLogic/hrms/backend/controllers/employeeController''''\\); require\\(''''d:/AsterLogic/hrms/backend/routes/authRoutes''''\\); require\\(''''d:/AsterLogic/hrms/backend/routes/employeeRoutes''''\\); console.log\\(''''All backend modules OK''''\\)\")"
+      "Bash(node -e \"require\\(''''d:/AsterLogic/hrms/backend/database''''\\); require\\(''''d:/AsterLogic/hrms/backend/controllers/authController''''\\); require\\(''''d:/AsterLogic/hrms/backend/controllers/employeeController''''\\); require\\(''''d:/AsterLogic/hrms/backend/routes/authRoutes''''\\); require\\(''''d:/AsterLogic/hrms/backend/routes/employeeRoutes''''\\); console.log\\(''''All backend modules OK''''\\)\")",
+      "Bash(find d:AsterLogichrms -name *server* -type f)",
+      "Bash(grep -r \"nodemailer\\\\|sendMail\\\\|email\\\\|notification\" d:AsterLogichrmsbackend --include=*.js --exclude-dir=node_modules)",
+      "Bash(grep -r \"leave.*type\\\\|leave_type\" d:AsterLogichrmsbackend --include=*.js --exclude-dir=node_modules -A 2 -B 2)",
+      "Bash(npm install:*)"
     ]
   }
 }
