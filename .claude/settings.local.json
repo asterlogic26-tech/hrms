@@ -15,7 +15,8 @@
       "Bash(find d:AsterLogichrms -name *server* -type f)",
       "Bash(grep -r \"nodemailer\\\\|sendMail\\\\|email\\\\|notification\" d:AsterLogichrmsbackend --include=*.js --exclude-dir=node_modules)",
       "Bash(grep -r \"leave.*type\\\\|leave_type\" d:AsterLogichrmsbackend --include=*.js --exclude-dir=node_modules -A 2 -B 2)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(node test-mail.js)"
     ]
   }
 }
