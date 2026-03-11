@@ -2,7 +2,7 @@ import Layout from '../components/Layout'
 import api from '../services/api'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import { CheckCircle2, XCircle, Clock3 } from 'lucide-react'
+import { CheckCircle2, XCircle, Clock3, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function Attendance() {
   const { user } = useAuth()
@@ -10,8 +10,6 @@ export default function Attendance() {
   const [history, setHistory] = useState([])
   const [todayStatus, setTodayStatus] = useState(null)
   const [holidays, setHolidays] = useState([])
-  const [allToday, setAllToday] = useState([])
-  const [allError, setAllError] = useState('')
 
   const fetchHistory = async () => {
     try {
@@ -56,20 +54,6 @@ export default function Attendance() {
     return () => { cancelled = true }
   }, [])
 
-  useEffect(() => {
-    if (user?.role !== 'Founder') return
-    let cancelled = false
-    ;(async () => {
-      try {
-        const { data } = await api.get('/attendance/all')
-        if (!cancelled) setAllToday(data.rows || [])
-      } catch (e) {
-        if (!cancelled) setAllError(e.response?.data?.message || 'Failed to load all attendance')
-      }
-    })()
-    return () => { cancelled = true }
-  }, [user?.role])
-
   const clockIn = async () => {
     try {
       await api.post('/attendance/clockin')
@@ -106,40 +90,43 @@ export default function Attendance() {
   }
 
   const canApprove = ['Manager', 'Team Lead', 'Founder'].includes(user?.role)
+  const isFounder = user?.role === 'Founder'
 
   return (
     <Layout>
       <div className="space-y-5 max-w-5xl mx-auto">
 
-        {/* Clock In / Out */}
-        <div className="card p-5">
-          <div className="font-semibold text-gray-800 mb-4">Today's Action</div>
-          <div className="flex gap-3 items-center flex-wrap">
-            <button
-              onClick={clockIn}
-              disabled={todayStatus === 'clocked_in' || todayStatus === 'clocked_out'}
-              className={`px-6 py-2.5 rounded-lg text-white font-medium transition shadow-sm ${
-                todayStatus ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
-              }`}
-            >
-              Clock In
-            </button>
-            <button
-              onClick={clockOut}
-              disabled={todayStatus !== 'clocked_in'}
-              className={`px-6 py-2.5 rounded-lg text-white font-medium transition shadow-sm ${
-                todayStatus !== 'clocked_in' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600'
-              }`}
-            >
-              Clock Out
-            </button>
-            {msg && (
-              <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full">
-                {msg}
-              </span>
-            )}
+        {/* Clock In / Out — hidden for Founder */}
+        {!isFounder && (
+          <div className="card p-5">
+            <div className="font-semibold text-gray-800 mb-4">Today's Action</div>
+            <div className="flex gap-3 items-center flex-wrap">
+              <button
+                onClick={clockIn}
+                disabled={todayStatus === 'clocked_in' || todayStatus === 'clocked_out'}
+                className={`px-6 py-2.5 rounded-lg text-white font-medium transition shadow-sm ${
+                  todayStatus ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+                }`}
+              >
+                Clock In
+              </button>
+              <button
+                onClick={clockOut}
+                disabled={todayStatus !== 'clocked_in'}
+                className={`px-6 py-2.5 rounded-lg text-white font-medium transition shadow-sm ${
+                  todayStatus !== 'clocked_in' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600'
+                }`}
+              >
+                Clock Out
+              </button>
+              {msg && (
+                <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full">
+                  {msg}
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Calendar + Holidays */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -218,41 +205,177 @@ export default function Attendance() {
         {/* Regularization section */}
         <RegularizationSection canApprove={canApprove} />
 
-        {/* Founder: All attendance today */}
-        {user?.role === 'Founder' && (
-          <div className="card p-5">
-            <div className="font-semibold text-gray-800 mb-3">All Attendance (Today)</div>
-            {allError && <div className="text-sm text-red-600 mb-2">{allError}</div>}
-            {allToday.length === 0 ? (
-              <div className="text-sm text-gray-400">No attendance records for today.</div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="table-th">Name</th>
-                    <th className="table-th">Email</th>
-                    <th className="table-th">In</th>
-                    <th className="table-th">Out</th>
-                    <th className="table-th">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allToday.map((r) => (
+        {/* Founder: Historical attendance viewer */}
+        {isFounder && <FounderAttendanceViewer />}
+
+      </div>
+    </Layout>
+  )
+}
+
+// ── Founder: full historical attendance viewer ─────────────────────────────────
+
+function FounderAttendanceViewer() {
+  const today = new Date().toISOString().slice(0, 10)
+  const [selectedDate, setSelectedDate] = useState(today)
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const load = async (date) => {
+    setLoading(true)
+    setError('')
+    try {
+      const { data } = await api.get(`/attendance/all?date=${date}`)
+      setRows(data.rows || [])
+    } catch (e) {
+      setError(e.response?.data?.message || 'Failed to load attendance')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { load(selectedDate) }, [selectedDate])
+
+  const shiftDay = (delta) => {
+    const d = new Date(selectedDate)
+    d.setDate(d.getDate() + delta)
+    const next = d.toISOString().slice(0, 10)
+    if (next <= today) setSelectedDate(next)
+  }
+
+  const fmtTime = (iso) => iso
+    ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
+    : '–'
+
+  const calcHours = (r) => {
+    if (!r.clock_in || !r.clock_out) return null
+    return ((new Date(r.clock_out) - new Date(r.clock_in)) / 3600000).toFixed(1)
+  }
+
+  const isToday = selectedDate === today
+
+  // Summary counts
+  const present   = rows.filter(r => r.clock_in && r.clock_out).length
+  const working   = rows.filter(r => r.clock_in && !r.clock_out).length
+  const absent    = rows.filter(r => !r.clock_in).length
+  const underHrs  = rows.filter(r => {
+    const h = calcHours(r)
+    return h !== null && parseFloat(h) < 4
+  }).length
+
+  return (
+    <div className="card overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/50">
+        <div className="font-semibold text-gray-800">
+          Attendance Overview
+          {isToday && <span className="ml-2 text-xs text-brand bg-blue-50 px-2 py-0.5 rounded-full font-medium">Today</span>}
+        </div>
+
+        {/* Date navigation */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => shiftDay(-1)}
+            className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-500 transition"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <input
+            type="date"
+            max={today}
+            value={selectedDate}
+            onChange={e => e.target.value && e.target.value <= today && setSelectedDate(e.target.value)}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 cursor-pointer"
+          />
+          <button
+            onClick={() => shiftDay(1)}
+            disabled={isToday}
+            className={`p-1.5 rounded-lg transition ${isToday ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-gray-200 text-gray-500'}`}
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* Summary chips */}
+      {!loading && rows.length > 0 && (
+        <div className="flex gap-3 flex-wrap px-5 pt-4">
+          <Chip label="Present" value={present}    color="text-green-700 bg-green-50" />
+          <Chip label="Working" value={working}    color="text-blue-700 bg-blue-50" />
+          <Chip label="Absent"  value={absent}     color="text-red-600 bg-red-50" />
+          <Chip label="< 4 hrs" value={underHrs}   color="text-orange-600 bg-orange-50" />
+          <Chip label="Total"   value={rows.length} color="text-gray-700 bg-gray-100" />
+        </div>
+      )}
+
+      <div className="p-5">
+        {loading && (
+          <div className="text-center text-gray-400 py-8">Loading…</div>
+        )}
+        {error && (
+          <div className="text-sm text-red-600 bg-red-50 px-4 py-2 rounded-lg mb-3">{error}</div>
+        )}
+        {!loading && !error && rows.length === 0 && (
+          <div className="text-sm text-gray-400 text-center py-8">
+            No attendance records for {selectedDate}.
+          </div>
+        )}
+        {!loading && !error && rows.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="table-th">Employee</th>
+                  <th className="table-th">Role</th>
+                  <th className="table-th">Clock In</th>
+                  <th className="table-th">Clock Out</th>
+                  <th className="table-th">Hours</th>
+                  <th className="table-th">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(r => {
+                  const hrs = calcHours(r)
+                  const underHours = hrs !== null && parseFloat(hrs) < 4
+                  let statusLabel = 'Absent'
+                  let badgeCls    = 'badge-red'
+                  if (r.clock_in && r.clock_out) { statusLabel = 'Present'; badgeCls = 'badge-green' }
+                  else if (r.clock_in)            { statusLabel = 'Working'; badgeCls = 'badge-blue' }
+                  return (
                     <tr key={r.user_id} className="table-row">
-                      <td className="table-td font-medium">{r.name}</td>
-                      <td className="table-td text-gray-500">{r.email}</td>
-                      <td className="table-td">{r.clock_in ? new Date(r.clock_in).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:false}) : '–'}</td>
-                      <td className="table-td">{r.clock_out ? new Date(r.clock_out).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:false}) : '–'}</td>
-                      <td className="table-td"><span className="badge badge-green">{r.status || 'Present'}</span></td>
+                      <td className="table-td font-medium text-gray-800">{r.name}</td>
+                      <td className="table-td text-gray-400 text-xs">{r.role}</td>
+                      <td className="table-td">{fmtTime(r.clock_in)}</td>
+                      <td className="table-td">{fmtTime(r.clock_out)}</td>
+                      <td className="table-td">
+                        {hrs !== null ? (
+                          <span className={`font-medium ${underHours ? 'text-orange-500' : 'text-green-700'}`}>
+                            {hrs}h{underHours ? ' ⚠' : ''}
+                          </span>
+                        ) : '–'}
+                      </td>
+                      <td className="table-td">
+                        <span className={`badge ${badgeCls}`}>{statusLabel}</span>
+                      </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
-    </Layout>
+    </div>
+  )
+}
+
+function Chip({ label, value, color }) {
+  return (
+    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${color}`}>
+      <span>{value}</span>
+      <span className="font-normal opacity-70">{label}</span>
+    </div>
   )
 }
 

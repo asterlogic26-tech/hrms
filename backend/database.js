@@ -106,6 +106,28 @@ db.serialize(() => {
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (approved_by) REFERENCES users(id)
   )`);
+
+  // User lifecycle status: active (default), pending (awaiting Founder approval), terminated
+  db.run(`ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active' CHECK(status IN ('pending','active','terminated'))`, () => {});
+  // Ensure all pre-existing rows (incl. Founder) are active
+  db.run(`UPDATE users SET status = 'active' WHERE status IS NULL`);
+
+  // Leave type column added to leaves (migrates safely)
+  db.run(`ALTER TABLE leaves ADD COLUMN leave_type TEXT DEFAULT 'Annual' CHECK(leave_type IN ('Annual', 'Sick', 'Other'))`, () => {});
+
+  // Leave balances: 6 annual + 6 sick per user per year, auto-reset every Jan
+  db.run(`CREATE TABLE IF NOT EXISTS leave_balances (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    year INTEGER NOT NULL,
+    annual_total INTEGER DEFAULT 6,
+    annual_used INTEGER DEFAULT 0,
+    sick_total INTEGER DEFAULT 6,
+    sick_used INTEGER DEFAULT 0,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, year),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  )`);
 });
 
 module.exports = db;

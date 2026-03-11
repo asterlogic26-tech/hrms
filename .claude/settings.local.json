@@ -3,7 +3,15 @@
     "allow": [
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(node -e \"require\\(''''./database''''\\); require\\(''''./controllers/leaveController''''\\); require\\(''''./routes/leaveRoutes''''\\); console.log\\(''''Backend modules OK''''\\)\")",
+      "Bash(python3 -c \":*)",
+      "Bash(node -e \"require\\(''fs''\\).writeFileSync\\(''d:/tmp_employees.jsx'', ''test''\\)\")",
+      "Bash(node -e \":*)",
+      "Bash(node d:/gen_employees.js)",
+      "Bash(node -e \"const fs=require\\(''fs''\\); console.log\\(fs.readFileSync\\(''d:/AsterLogic/hrms/frontend/src/pages/Employees.jsx'',''utf8''\\).split\\(''\\\\n''\\).length\\)\")",
+      "Bash(node -e \"const fs=require\\(''fs''\\); console.log\\(fs.readFileSync\\(''d:/gen_employees.js'',''utf8''\\).substring\\(0,100\\)\\)\")",
+      "Bash(node -e \"require\\(''''d:/AsterLogic/hrms/backend/database''''\\); require\\(''''d:/AsterLogic/hrms/backend/controllers/authController''''\\); require\\(''''d:/AsterLogic/hrms/backend/controllers/employeeController''''\\); require\\(''''d:/AsterLogic/hrms/backend/routes/authRoutes''''\\); require\\(''''d:/AsterLogic/hrms/backend/routes/employeeRoutes''''\\); console.log\\(''''All backend modules OK''''\\)\")"
     ]
   }
 }
